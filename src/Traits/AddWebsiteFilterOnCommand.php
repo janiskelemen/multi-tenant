@@ -35,6 +35,11 @@ trait AddWebsiteFilterOnCommand
 
                 if ($websites->count() > 1) {
                     $this->connection->purge();
+                    /* Workaround for mysql connection limit issue */
+                    $kill = optional(\Illuminate\Support\Facades\DB::connection('system')->select("select concat('KILL ',id,';') as mysqlcommand from information_schema.processlist where db='" . $website->uuid . "' AND Command='Sleep' ORDER BY id DESC LIMIT 1;"));
+                    if ($kill && $kill[0] instanceof \stdClass) {
+                        \Illuminate\Support\Facades\DB::connection('system')->select($kill[0]->{'mysqlcommand'});
+                    }
                 }
             });
         });
